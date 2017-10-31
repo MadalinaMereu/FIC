@@ -5,7 +5,14 @@
 #include "opencv2/highgui/highgui.hpp"
 //#include <opencv2\cv.h>
 #include "opencv2/opencv.hpp"
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h> 
 using namespace std;
 using namespace cv;
 //initial min and max HSV filter values.
@@ -175,9 +182,71 @@ void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed) {
 		else putText(cameraFeed, "TOO MUCH NOISE! ADJUST FILTER", Point(0, 50), 1, 2, Scalar(0, 0, 255), 2);
 	}
 }
+void error(const char *msg)
+{
+    perror(msg);
+    exit(0);
+}
+
+void socket( )
+{
+    int sockfd, portno, n;
+    struct sockaddr_in serv_addr;
+    struct hostent *server;
+
+    char buffer[256];
+    portno = atoi("20232");
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+        error("ERROR opening socket");
+    server = gethostbyname("193.226.12.217");
+    if (server == NULL) {
+        fprintf(stderr,"ERROR, no such host\n");
+        exit(0);
+    }
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr, 
+         (char *)&serv_addr.sin_addr.s_addr,
+         server->h_length);
+    serv_addr.sin_port = htons(portno);
+    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+        error("ERROR connecting");
+    printf("Please enter the message: ");
+    bzero(buffer,256);
+    fgets(buffer,255,stdin);
+    n = write(sockfd,buffer,strlen(buffer));
+    if (n < 0) 
+         error("ERROR writing to socket");
+    bzero(buffer,256);
+    n = read(sockfd,buffer,255);
+    fgets(buffer,255,stdin);
+    
+    int i;
+    char sir[10];
+    
+    for(i=0;i<strlen(buffer);i++)
+    {
+        sprintf(sir, "%c",buffer[i]);
+        if(strcmp(buffer,"s")==0 && strcmp(buffer,"f") == 0 && strcmp(buffer,"l") == 0 && strcmp(buffer,"b") == 0 && strcmp(buffer,"r") == 0)
+        {
+          n=write(sockfd,sir,strlen(sir));
+          if (n < 0) 
+           error("ERROR reading from socket");
+          
+          sleep(1);
+        }
+    }
+    
+   if (n < 0) 
+     error("ERROR reading from socket");
+    printf("%s\n",buffer);
+    close(sockfd);
+    
+}
 int main(int argc, char* argv[])
 {
-
+/*
 	//some boolean variables for different functionality within this
 	//program
 	bool trackObjects = true;
@@ -203,11 +272,11 @@ int main(int argc, char* argv[])
 	capture.set(CV_CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT);
 	//start an infinite loop where webcam feed is copied to cameraFeed matrix
 	//all of our operations will be performed within this loop
-
-
+*/
+  socket();
 
 	
-	while (1) {
+ /* while (1) {
 
 
 		//store image to matrix
@@ -236,7 +305,7 @@ int main(int argc, char* argv[])
 		//image will not appear without this waitKey() command
 		waitKey(30);
 	}
-
+*/
 	return 0;
 }
 
